@@ -1,0 +1,16 @@
+{
+    "name": "newwebsouth/abstraction",
+    "description": "Layer of abstraction for nomess",
+    "authors": [
+        {
+            "name": "Romain Lavabre",
+            "email": "webmaster@newwebsouth.fr"
+        }
+    ],
+    "autoload" : {
+		"psr-4" : {
+            "NewWebSouth\\Abstraction\\": "/"
+		}
+    },
+    "minimum-stability": "stable"
+}
