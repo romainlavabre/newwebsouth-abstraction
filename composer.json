@@ -9,7 +9,7 @@
     ],
     "autoload" : {
 		"psr-4" : {
-            "NewWebSouth\\Abstraction\\": "/"
+            "Newwebsouth\\Abstraction\\": "/"
 		}
     },
     "minimum-stability": "stable"
