@@ -1,7 +1,7 @@
 <?php
 
 
-namespace NewWebSouth\Abstraction\Crud;
+namespace Newwebsouth\Abstraction\Crud;
 
 
 

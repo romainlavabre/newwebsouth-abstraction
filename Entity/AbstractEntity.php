@@ -56,7 +56,7 @@ abstract class AbstractEntity
     {
         $reflectionProperty = $this->getReflectionProperty( $object, $propertyName );
         
-        if( $reflectionProperty->isInitialized() ) {
+        if( $reflectionProperty->isInitialized($object) ) {
             $value = $reflectionProperty->getValue( $object );
             
             if( is_array( $value ) ) {

@@ -54,8 +54,12 @@ abstract class AppController extends Distributor
         $id     = (int)$request->getParameter( self::PARAM_ID );
         $entity = $this->entityManager->find( $classname, $id );
 
-        if($entity === NULL && !is_null($this->get(self::DC_KEY_REDIRECT_TO_ROUTE))){
+        if(empty($entity) && !is_null($this->get(self::DC_KEY_REDIRECT_TO_ROUTE))){
             $this->redirectLocal($this->get(self::DC_KEY_REDIRECT_TO_ROUTE));
+        }
+        
+        if(is_array($entity)){
+            return $entity[0];
         }
         
         return $entity;
