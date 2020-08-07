@@ -66,8 +66,10 @@ abstract class AbstractEntity
             } else {
                 $value = NULL;
             }
-            
-            $reflectionProperty->setValue( $object, $value );
+    
+            try {
+                $reflectionProperty->setValue( $object, $value );
+            }catch(\Throwable $e){}
         }
         
         return $this;
