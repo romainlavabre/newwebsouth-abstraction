@@ -8,34 +8,30 @@ use Newwebsouth\Abstraction\Crud\CreateInterface;
 use Newwebsouth\Abstraction\Crud\DeleteInterface;
 use Newwebsouth\Abstraction\Crud\ServiceInterface;
 use Newwebsouth\Abstraction\Crud\UpdateInterface;
+use Newwebsouth\Exception\UninitializedException;
 use Nomess\Components\EntityManager\EntityManagerInterface;
+use Nomess\Helpers\DataHelper;
 use Nomess\Http\HttpRequest;
 use Nomess\Manager\Distributor;
-use Nomess\Helpers\DataHelper;
 
 abstract class AppController extends Distributor
 {
-
+    
     use DataHelper;
     
-    private const PARAM_ID            = 'id';
-
-    private const ERROR_MESSAGE       = 'error';
-
-    private const CONF_ROUTE          = 'route';
-
+    private const PARAM_ID = 'id';
+    private const ERROR_MESSAGE = 'error';
+    private const CONF_ROUTE = 'route';
     private const CONF_REQUEST_METHOD = 'request_method';
-    
     private const DC_KEY_REDIRECT_TO_ROUTE = 'nws_abstraction_redirect';
-
     protected EntityManagerInterface $entityManager;
     private array                    $configuration = [
         self::CONF_ROUTE          => NULL,
         self::CONF_REQUEST_METHOD => 'POST'
     ];
-
-
-    public function __construct( EntityManagerInterface $entityManager)
+    
+    
+    public function __construct( EntityManagerInterface $entityManager )
     {
         $this->entityManager = $entityManager;
     }
@@ -47,18 +43,26 @@ abstract class AppController extends Distributor
      *
      * @param string $classname
      * @param HttpRequest $request
+     * @param array|null $secure ["prop->prop->prop" => mixed: $value]
      * @return object|null
+     * @throws UninitializedException
      */
-    protected function getEntity( string $classname, HttpRequest $request ): ?object
+    protected function getEntity( string $classname, HttpRequest $request, array $secure = NULL ): ?object
     {
         $id     = (int)$request->getParameter( self::PARAM_ID );
         $entity = $this->entityManager->find( $classname, $id );
-
-        if(empty($entity) && !is_null($this->get(self::DC_KEY_REDIRECT_TO_ROUTE))){
-            $this->redirectLocal($this->get(self::DC_KEY_REDIRECT_TO_ROUTE));
+        
+        if( empty( $entity ) && !is_null( $this->get( self::DC_KEY_REDIRECT_TO_ROUTE ) ) ) {
+            $this->redirectLocal( $this->get( self::DC_KEY_REDIRECT_TO_ROUTE ) );
         }
         
-        if(is_array($entity)){
+        if( !empty( $secure ) ) {
+            if( !$this->secure( $entity, $secure ) ) {
+                $this->redirectLocal( $this->get( self::DC_KEY_REDIRECT_TO_ROUTE ) );
+            }
+        }
+        
+        if( is_array( $entity ) ) {
             return $entity[0];
         }
         
@@ -80,8 +84,8 @@ abstract class AppController extends Distributor
     {
         return $this->kernelManager( $request, $create, 'create', $instance );
     }
-
-
+    
+    
     private function kernelManager( HttpRequest $request, $interface, string $methodName, $instance ): bool
     {
         if( $request->isRequestMethod( $this->configuration[self::CONF_REQUEST_METHOD] ) ) {
@@ -89,16 +93,15 @@ abstract class AppController extends Distributor
                 if( $interface->$methodName( $request, $instance ) ) {
                     return TRUE;
                 }
-            }
-            else {
+            } else {
                 $request->setError( 'Le formulaire n\'a pas pu être transmis' );
-
+                
                 return FALSE;
             }
-
+            
             $request->setError( $interface->getRepository( self::ERROR_MESSAGE ) );
         }
-
+        
         return FALSE;
     }
     
@@ -160,7 +163,49 @@ abstract class AppController extends Distributor
     protected function setSearchMethod( string $requestMethod ): self
     {
         $this->configuration[self::CONF_REQUEST_METHOD] = $requestMethod;
-
+        
         return $this;
+    }
+    
+    
+    private function secure( object $object, array $secure ): bool
+    {
+        $properties = explode( '->', key( $secure ) );
+        $compare    = NULL;
+        $lastObject = $object;
+        
+        foreach( $properties as $property ) {
+            $reflectionProperty = new \ReflectionProperty( get_class( $lastObject ), $property );
+            
+            if( !$reflectionProperty->isPublic() ) {
+                $reflectionProperty->setAccessible( TRUE );
+            }
+            
+            if( !$reflectionProperty->isInitialized( $lastObject ) ) {
+                if( NOMESS_CONTEXT === 'DEV' ) {
+                    throw new UninitializedException( 'Impossible of apply secure module, the property "' .
+                                                      $reflectionProperty->getName() . '" of class "' .
+                                                      $reflectionProperty->getDeclaringClass()->getName() . '" is uninitialized' );
+                }
+                
+                return FALSE;
+            }
+            
+            if( $reflectionProperty->getType()->getName() === 'array' ) {
+                throw new \InvalidArgumentException( 'Impossible of apply secure module, the property "' .
+                                                     $reflectionProperty->getName() . '" of class "' .
+                                                     $reflectionProperty->getDeclaringClass()->getName() . '" is array' );
+            }
+            
+            $compare = $reflectionProperty->getValue( $lastObject );
+            
+            if( is_object( $compare ) ) {
+                $lastObject = $compare;
+            } else {
+                break;
+            }
+        }
+        
+        return $compare === current( $secure );
     }
 }
