@@ -19,10 +19,10 @@ abstract class AppController extends Distributor
     
     use DataHelper;
     
-    private const PARAM_ID = 'id';
-    private const ERROR_MESSAGE = 'error';
-    private const CONF_ROUTE = 'route';
-    private const CONF_REQUEST_METHOD = 'request_method';
+    private const PARAM_ID                 = 'id';
+    private const ERROR_MESSAGE            = 'error';
+    private const CONF_ROUTE               = 'route';
+    private const CONF_REQUEST_METHOD      = 'request_method';
     private const DC_KEY_REDIRECT_TO_ROUTE = 'nws_abstraction_redirect';
     protected EntityManagerInterface $entityManager;
     private array                    $configuration = [
@@ -56,7 +56,7 @@ abstract class AppController extends Distributor
             $this->redirectLocal( $this->get( self::DC_KEY_REDIRECT_TO_ROUTE ) );
         }
         
-        if( !empty( $secure ) ) {
+        if( !empty( $secure ) && !empty( $entity ) ) {
             if( !$this->secure( $entity, $secure ) ) {
                 $this->redirectLocal( $this->get( self::DC_KEY_REDIRECT_TO_ROUTE ) );
             }
