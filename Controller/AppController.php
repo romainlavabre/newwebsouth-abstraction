@@ -9,31 +9,38 @@ use Newwebsouth\Abstraction\Crud\DeleteInterface;
 use Newwebsouth\Abstraction\Crud\ServiceInterface;
 use Newwebsouth\Abstraction\Crud\UpdateInterface;
 use Newwebsouth\Exception\UninitializedException;
-use Nomess\Components\EntityManager\EntityManagerInterface;
+use Nomess\Component\Orm\EntityManagerInterface;
+use Nomess\Component\Parameter\ParameterStoreInterface;
 use Nomess\Helpers\DataHelper;
 use Nomess\Http\HttpRequest;
+use Nomess\Http\HttpResponse;
 use Nomess\Manager\Distributor;
 
-abstract class AppController extends Distributor
+abstract class AppController
 {
-    
-    use DataHelper;
     
     private const PARAM_ID                 = 'id';
     private const ERROR_MESSAGE            = 'error';
     private const CONF_ROUTE               = 'route';
     private const CONF_REQUEST_METHOD      = 'request_method';
     private const DC_KEY_REDIRECT_TO_ROUTE = 'nws_abstraction_redirect';
-    protected EntityManagerInterface $entityManager;
-    private array                    $configuration = [
+    protected EntityManagerInterface  $entityManager;
+    private HttpResponse              $response;
+    protected ParameterStoreInterface $parameterStore;
+    private array                     $configuration = [
         self::CONF_ROUTE          => NULL,
         self::CONF_REQUEST_METHOD => 'POST'
     ];
     
     
-    public function __construct( EntityManagerInterface $entityManager )
+    public function __construct(
+        EntityManagerInterface $entityManager,
+        HttpResponse $response,
+        ParameterStoreInterface $parameterStore )
     {
-        $this->entityManager = $entityManager;
+        $this->entityManager  = $entityManager;
+        $this->response       = $response;
+        $this->parameterStore = $parameterStore;
     }
     
     
@@ -53,12 +60,12 @@ abstract class AppController extends Distributor
         $entity = $this->entityManager->find( $classname, $id );
         
         if( empty( $entity ) && !is_null( $this->get( self::DC_KEY_REDIRECT_TO_ROUTE ) ) ) {
-            $this->redirectLocal( $this->get( self::DC_KEY_REDIRECT_TO_ROUTE ) );
+            $this->response->redirectToLocal( $this->parameterStore->get( self::DC_KEY_REDIRECT_TO_ROUTE ), NULL );
         }
         
         if( !empty( $secure ) && !empty( $entity ) ) {
             if( !$this->secure( $entity, $secure ) ) {
-                $this->redirectLocal( $this->get( self::DC_KEY_REDIRECT_TO_ROUTE ) );
+                $this->response->redirectToLocal( $this->parameterStore->get( self::DC_KEY_REDIRECT_TO_ROUTE ), NULL );
             }
         }
         

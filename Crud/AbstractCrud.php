@@ -3,9 +3,7 @@
 
 namespace Newwebsouth\Abstraction\Crud;
 
-
-
-use Nomess\Components\EntityManager\EntityManagerInterface;
+use Nomess\Component\Orm\EntityManagerInterface;
 
 abstract class AbstractCrud
 {
@@ -13,10 +11,7 @@ abstract class AbstractCrud
     protected const ERROR           = 'error';
     protected const SUCCESS         = 'success';
 
-    protected array $repository = [
-        'error' => NULL,
-        'success' => NULL
-    ];
+    protected array $repository = [];
 
     protected EntityManagerInterface $entityManager;
 
@@ -68,9 +63,6 @@ abstract class AbstractCrud
      */
     protected function purgeRepository(): void
     {
-        $this->repository = [
-            'error' => NULL,
-            'success' => NULL
-        ];
+        $this->repository = [];
     }
 }
