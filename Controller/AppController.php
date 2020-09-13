@@ -59,7 +59,7 @@ abstract class AppController
         $id     = (int)$request->getParameter( self::PARAM_ID );
         $entity = $this->entityManager->find( $classname, $id );
         
-        if( empty( $entity ) && !is_null( $this->get( self::DC_KEY_REDIRECT_TO_ROUTE ) ) ) {
+        if( empty( $entity ) && !is_null( $this->parameterStore->get( self::DC_KEY_REDIRECT_TO_ROUTE ) ) ) {
             $this->response->redirectToLocal( $this->parameterStore->get( self::DC_KEY_REDIRECT_TO_ROUTE ), NULL );
         }
         
