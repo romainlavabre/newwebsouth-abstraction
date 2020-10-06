@@ -23,58 +23,10 @@ abstract class AppController
     private const ERROR_MESSAGE            = 'error';
     private const CONF_ROUTE               = 'route';
     private const CONF_REQUEST_METHOD      = 'request_method';
-    private const DC_KEY_REDIRECT_TO_ROUTE = 'nws_abstraction_redirect';
-    protected EntityManagerInterface  $entityManager;
-    private HttpResponse              $response;
-    protected ParameterStoreInterface $parameterStore;
     private array                     $configuration = [
         self::CONF_ROUTE          => NULL,
         self::CONF_REQUEST_METHOD => 'POST'
     ];
-    
-    
-    public function __construct(
-        EntityManagerInterface $entityManager,
-        HttpResponse $response,
-        ParameterStoreInterface $parameterStore )
-    {
-        $this->entityManager  = $entityManager;
-        $this->response       = $response;
-        $this->parameterStore = $parameterStore;
-    }
-    
-    
-    /**
-     * Search the id request parameter, if found return the entity associate, if not found, redirect to
-     * ressource unavailable route ("nws_abstraction_redirect") if data found in data center, else return null
-     *
-     * @param string $classname
-     * @param HttpRequest $request
-     * @param array|null $secure ["prop->prop->prop" => mixed: $value]
-     * @return object|null
-     * @throws UninitializedException
-     */
-    protected function getEntity( string $classname, HttpRequest $request, array $secure = NULL ): ?object
-    {
-        $id     = (int)$request->getParameter( self::PARAM_ID );
-        $entity = $this->entityManager->find( $classname, $id );
-        
-        if( empty( $entity ) && !is_null( $this->parameterStore->get( self::DC_KEY_REDIRECT_TO_ROUTE ) ) ) {
-            $this->response->redirectToLocal( $this->parameterStore->get( self::DC_KEY_REDIRECT_TO_ROUTE ), NULL );
-        }
-        
-        if( !empty( $secure ) && !empty( $entity ) ) {
-            if( !$this->secure( $entity, $secure ) ) {
-                $this->response->redirectToLocal( $this->parameterStore->get( self::DC_KEY_REDIRECT_TO_ROUTE ), NULL );
-            }
-        }
-        
-        if( is_array( $entity ) ) {
-            return $entity[0];
-        }
-        
-        return $entity;
-    }
     
     
     /**
@@ -172,47 +124,5 @@ abstract class AppController
         $this->configuration[self::CONF_REQUEST_METHOD] = $requestMethod;
         
         return $this;
-    }
-    
-    
-    private function secure( object $object, array $secure ): bool
-    {
-        $properties = explode( '->', key( $secure ) );
-        $compare    = NULL;
-        $lastObject = $object;
-        
-        foreach( $properties as $property ) {
-            $reflectionProperty = new \ReflectionProperty( get_class( $lastObject ), $property );
-            
-            if( !$reflectionProperty->isPublic() ) {
-                $reflectionProperty->setAccessible( TRUE );
-            }
-            
-            if( !$reflectionProperty->isInitialized( $lastObject ) ) {
-                if( NOMESS_CONTEXT === 'DEV' ) {
-                    throw new UninitializedException( 'Impossible of apply secure module, the property "' .
-                                                      $reflectionProperty->getName() . '" of class "' .
-                                                      $reflectionProperty->getDeclaringClass()->getName() . '" is uninitialized' );
-                }
-                
-                return FALSE;
-            }
-            
-            if( $reflectionProperty->getType()->getName() === 'array' ) {
-                throw new \InvalidArgumentException( 'Impossible of apply secure module, the property "' .
-                                                     $reflectionProperty->getName() . '" of class "' .
-                                                     $reflectionProperty->getDeclaringClass()->getName() . '" is array' );
-            }
-            
-            $compare = $reflectionProperty->getValue( $lastObject );
-            
-            if( is_object( $compare ) ) {
-                $lastObject = $compare;
-            } else {
-                break;
-            }
-        }
-        
-        return $compare === current( $secure );
     }
 }
